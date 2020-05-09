@@ -17,11 +17,11 @@ export class AuthService {
 
 
     public async validateUser(authDto: AuthDto): Promise<AuthSuccessDto> {
-        const { email, password } = authDto;
-        const user = await this.usersService.getByEmail(email);
+        const { phone, email = null, password } = authDto;
+        const user = email ? await this.usersService.getByEmail(email) : await this.usersService.getByPhone(phone);
 
         // IF user not found in DB
-        if (!user) {
+        if (!user || user.phoneActivated) {
             throw new BadRequestException(ERRORS_CONSTANTS.CODES.INVALID_CREDENTIALS);
         }
 

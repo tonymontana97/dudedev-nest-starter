@@ -1,4 +1,4 @@
-import {IsEmail, IsNotEmpty, MaxLength, MinLength} from "class-validator";
+import {IsEmail, IsNotEmpty, IsPhoneNumber, MaxLength, MinLength, ValidateIf} from "class-validator";
 import {VALIDATION_CONSTANTS} from "../../../shared/constants/validation.constants";
 import {ApiProperty} from "@nestjs/swagger";
 
@@ -7,9 +7,19 @@ export class AuthDto {
         required: true,
         type: String
     })
+    @ValidateIf(o => !o.phone)
     @IsNotEmpty()
     @IsEmail()
     public email: string;
+
+    @ApiProperty({
+        required: true,
+        type: String
+    })
+    @IsNotEmpty()
+    @ValidateIf(o => !o.email)
+    @IsPhoneNumber('ua')
+    public phone: string;
 
     @ApiProperty({
         required: true,

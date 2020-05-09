@@ -126,4 +126,8 @@ export class UsersService {
     public async getByEmail(email: string): Promise<User> {
         return this.userRepository.findOne({email});
     }
+
+    public async getByPhone(phone: string): Promise<User> {
+        return this.userRepository.findOne({phone});
+    }
 }

@@ -8,7 +8,6 @@ import * as helmet from 'helmet';
 import * as RateLimit from 'express-rate-limit';
 import * as compression from 'compression';
 import * as morgan from 'morgan';
-import {RolesGuard} from "./modules/auth/roles.guard";
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);

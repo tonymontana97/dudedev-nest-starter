@@ -11,6 +11,9 @@ import {ERRORS_CONSTANTS} from "../../../shared/constants/errors.constants";
 import {SuccessResponseDto} from "../../../shared/dto/SuccessResponse.dto";
 import {RequestResetPasswordDto} from "../dto/RequestResetPassword.dto";
 import {ResetPasswordDto} from "../dto/ResetPassword.dto";
+import {GoogleMapsService} from "../../../shared/google-maps/google-maps.service";
+import {SmsAdapterService} from "../../../shared/sms-adapter/sms-adapter.service";
+import {ActivatePhoneDto} from "../dto/ActivatePhone.dto";
 
 @Injectable()
 export class UsersService {
@@ -18,29 +21,26 @@ export class UsersService {
         public userRepository: UserRepository,
         private readonly userRolesService: UserRolesService,
         private readonly redisServiceAdapter: RedisServiceAdapter,
-        private readonly mailService: MailService
+        private readonly mailService: MailService,
+        private readonly googleMapsService: GoogleMapsService,
+        private readonly smsAdapterService: SmsAdapterService
     ) {
     }
 
     public async addNewUser(userDto: UserDto): Promise<UserDto> {
-        const { email, name, password } = userDto;
+        const {phone, password} = userDto;
         const defaultRole = await this.userRolesService.getDefaultUserRole();
         let user = new User();
-        user.email = email;
-        user.name = name;
         user.roles = [defaultRole];
         user.password = password;
+        user.phone = phone;
         user = await this.userRepository.addNewUser(user);
-        // generate uniq activation id
-        const randUUid = uuidv4();
+
         try {
-            // set uniq id to redis temporary
-            await this.redisServiceAdapter.set(user.id.toString(), randUUid);
+            await this.redisServiceAdapter.set(user.id.toString(), this.smsAdapterService.codeActivation);
         } catch (e) {
             throw new InternalServerErrorException();
         }
-
-        await this.mailService.sendActivationEmail(randUUid, user.email);
 
         return user;
     }
@@ -63,6 +63,32 @@ export class UsersService {
         }
     }
 
+    public async activateUserPhone(activatePhoneDto: ActivatePhoneDto): Promise<SuccessResponseDto> {
+        const { code, userId } = activatePhoneDto;
+        const user = await this.userRepository.findOne(userId);
+
+        if(!user) {
+            throw new BadRequestException();
+        }
+
+        const redisCode = await this.redisServiceAdapter.get(user.id.toString());
+
+        if (!redisCode) {
+            throw new BadRequestException();
+        }
+
+        if (code !== redisCode) {
+            throw new BadRequestException();
+        }
+
+        user.phoneActivated = true;
+        await user.save();
+        await this.redisServiceAdapter.delete(user.id.toString());
+
+        return new SuccessResponseDto();
+
+    }
+
     public async requestResetPassword(requestResetPassword: RequestResetPasswordDto): Promise<SuccessResponseDto> {
         const { email } = requestResetPassword;
         const user = await this.getByEmail(email);
@@ -82,7 +108,6 @@ export class UsersService {
     public async resetPassword(resetPasswordDto: ResetPasswordDto): Promise<SuccessResponseDto> {
         const { code, password } = resetPasswordDto;
         const id = await this.redisServiceAdapter.get(code);
-        console.log(id)
         if(id) {
             await this.redisServiceAdapter.delete(code);
             const user = await this.userRepository.findOne({where: {id}});

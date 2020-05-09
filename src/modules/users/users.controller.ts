@@ -5,21 +5,21 @@ import {UserDto} from "./dto/User.dto";
 import {User} from "./entities/User.entity";
 import {GetUser} from "../auth/get-user.decorator";
 import {AuthGuard} from "@nestjs/passport";
-import {RedisService} from "nestjs-redis";
 import {ActivateEmailDto} from "./dto/ActivateEmail.dto";
 import {SuccessResponseDto} from "../../shared/dto/SuccessResponse.dto";
 import {RequestResetPasswordDto} from "./dto/RequestResetPassword.dto";
 import {ResetPasswordDto} from "./dto/ResetPassword.dto";
+import {ActivatePhoneDto} from "./dto/ActivatePhone.dto";
 
 @ApiTags('User')
 @Controller('users')
 export class UsersController {
     constructor(
         private readonly usersService: UsersService,
-        private readonly redisService: RedisService
     ) {}
 
     @Post()
+    @UseInterceptors(ClassSerializerInterceptor)
     @ApiCreatedResponse({status: 201, description: 'User created.', type: UserDto})
     public register(
         @Body() userDto: UserDto
@@ -37,6 +37,15 @@ export class UsersController {
         @GetUser() user: User
     ): Promise<SuccessResponseDto> {
         return this.usersService.activeUserEmail(user.id, activateEmailDto);
+    }
+
+    @Post('/activate/phone')
+    @UseInterceptors(ClassSerializerInterceptor)
+    @ApiResponse({ status: 200, description: 'User phone is activated'})
+    public activatePhone(
+        @Body() activatePhoneDto: ActivatePhoneDto,
+    ): Promise<SuccessResponseDto> {
+        return this.usersService.activateUserPhone(activatePhoneDto);
     }
 
     @Post('/request-reset-password')

@@ -11,8 +11,10 @@ import {MailConfigService} from "./config/mail/config.service";
 import {RedisModule} from "nestjs-redis";
 import {RedisConfigModule} from "./config/database/redis/config.module";
 import {RedisConfigService} from "./config/database/redis/config.service";
-import { RedisAdapterModule } from './shared/redis-adapter/redis-adapter.module';
 import { MailModule } from './shared/mail/mail.module';
+import {SnakeNamingStrategy} from "./snake-naming.strategy";
+import {AppConfigService} from "./config/app/config.service";
+import { SmsAdapterModule } from './shared/sms-adapter/sms-adapter.module';
 
 const configs = [
     AppConfigModule,
@@ -30,8 +32,8 @@ const modules = [
 
 const db = [
     TypeOrmModule.forRootAsync({
-        imports: [DatabaseConfigModule],
-        useFactory: (dataBaseConfigService: DataBaseConfigService) => ({
+        imports: [DatabaseConfigModule, AppConfigModule],
+        useFactory: (dataBaseConfigService: DataBaseConfigService, appConfigService: AppConfigService) => ({
             type: 'postgres',
             host: dataBaseConfigService.host,
             port: dataBaseConfigService.port,
@@ -39,9 +41,11 @@ const db = [
             password: dataBaseConfigService.password,
             database: dataBaseConfigService.name,
             entities: [__dirname + '/**/*.entity{.ts,.js}'],
-            synchronize: true
+            synchronize: true,
+            logging: appConfigService.env === 'development',
+            namingStrategy: new SnakeNamingStrategy()
         }),
-        inject: [DataBaseConfigService]
+        inject: [DataBaseConfigService, AppConfigService]
     })
 ];
 
@@ -83,6 +87,7 @@ const redis = [
       ...mail,
       ...redis,
       MailModule,
+      SmsAdapterModule,
   ],
   controllers: [],
   providers: [],

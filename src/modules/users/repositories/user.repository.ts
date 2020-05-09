@@ -3,6 +3,7 @@ import {User} from "../entities/User.entity";
 import {BadRequestException, InternalServerErrorException} from "@nestjs/common";
 import {ERRORS_CONSTANTS} from "../../../shared/constants/errors.constants";
 import * as bcrypt from 'bcrypt';
+import {UserDto} from "../dto/User.dto";
 
 @EntityRepository(User)
 export class UserRepository extends Repository<User> {
@@ -35,6 +36,10 @@ export class UserRepository extends Repository<User> {
 
     public async hashUserPass(password: string): Promise<string> {
         return bcrypt.hash(password, 10);
+    }
+
+    public async updateProfile(user: User, userDto: UserDto): Promise<User> {
+        return
     }
 }
 

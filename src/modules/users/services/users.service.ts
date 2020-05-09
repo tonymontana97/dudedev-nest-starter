@@ -14,35 +14,61 @@ import {ResetPasswordDto} from "../dto/ResetPassword.dto";
 import {GoogleMapsService} from "../../../shared/google-maps/google-maps.service";
 import {SmsAdapterService} from "../../../shared/sms-adapter/sms-adapter.service";
 import {ActivatePhoneDto} from "../dto/ActivatePhone.dto";
+import {CreateUserDto} from "../dto/CreateUser.dto";
+import {UserAddressRepository} from "../repositories/UserAddress.repository";
 
 @Injectable()
 export class UsersService {
     constructor(
         public userRepository: UserRepository,
+        private userAddressRepository: UserAddressRepository,
         private readonly userRolesService: UserRolesService,
         private readonly redisServiceAdapter: RedisServiceAdapter,
         private readonly mailService: MailService,
         private readonly googleMapsService: GoogleMapsService,
-        private readonly smsAdapterService: SmsAdapterService
+        private readonly smsAdapterService: SmsAdapterService,
     ) {
     }
 
-    public async addNewUser(userDto: UserDto): Promise<UserDto> {
-        const {phone, password} = userDto;
+    public async addNewUser(createUserDto: CreateUserDto): Promise<UserDto> {
+        const {email, phone, password} = createUserDto;
         const defaultRole = await this.userRolesService.getDefaultUserRole();
         let user = new User();
         user.roles = [defaultRole];
         user.password = password;
         user.phone = phone;
+        user.email = email;
+
         user = await this.userRepository.addNewUser(user);
 
+        await this.sendActivationPhoneCode(user);
+
+        return user;
+    }
+
+    private async sendActivationPhoneCode(user: User): Promise<boolean> {
         try {
-            await this.redisServiceAdapter.set(user.id.toString(), this.smsAdapterService.codeActivation);
+            await this.redisServiceAdapter.set(`${user.id.toString()}-phone`, this.smsAdapterService.codeActivation);
         } catch (e) {
             throw new InternalServerErrorException();
         }
 
-        return user;
+        return true;
+    }
+
+    private async sendActivationEmailLink(user: User): Promise<boolean> {
+        // generate uniq activation id
+        const randUUid = uuidv4();
+        try {
+            // set uniq id to redis temporary
+            await this.redisServiceAdapter.set(`${user.id.toString()}-email`, randUUid);
+        } catch (e) {
+            throw new InternalServerErrorException();
+        }
+
+        await this.mailService.sendActivationEmail(randUUid, user.email);
+
+        return true;
     }
 
     public async activeUserEmail(id: number, activateEmailDto: ActivateEmailDto): Promise<SuccessResponseDto> {
@@ -129,5 +155,50 @@ export class UsersService {
 
     public async getByPhone(phone: string): Promise<User> {
         return this.userRepository.findOne({phone});
+    }
+
+    /**
+     * Update user profile
+     * @param userDto
+     * @param user
+     */
+    public async updateProfile(id: number, userDto: UserDto): Promise<UserDto> {
+        const {name, birthday, address, email, phone} = userDto;
+        const user = await this.userRepository.findOne(id, {
+            relations: ['address']
+        });
+        if (!user) {
+            throw new BadRequestException(ERRORS_CONSTANTS.CODES.USER_NOT_FOUND);
+        }
+        user.name = name;
+        user.birthday = birthday;
+        user.address = user.address ? await this.userAddressRepository.updateUserAddress(address, user)
+                                    : await this.googleMapsService.getUserAddress(address);
+
+        // IF user update phone number we should send activation code again
+        if (phone !== user.phone) {
+            const isAlreadyExists = await this.userRepository.findOne({phone});
+            if (isAlreadyExists && isAlreadyExists.id !== user.id) {
+                throw new BadRequestException(ERRORS_CONSTANTS.CODES.USER_ALREADY_EXISTS);
+            }
+
+            await this.sendActivationPhoneCode(user);
+        }
+        user.phone = phone;
+
+        // IF user update email we should send activation link again
+        if (email !== user.email) {
+            const isAlreadyExists = await this.userRepository.findOne({email});
+            if (isAlreadyExists && isAlreadyExists.id !== user.id) {
+                throw new BadRequestException(ERRORS_CONSTANTS.CODES.USER_ALREADY_EXISTS);
+            }
+            user.email = email;
+            await this.sendActivationEmailLink(user);
+        }
+        user.email = email;
+
+        await user.save();
+
+        return user.dto;
     }
 }

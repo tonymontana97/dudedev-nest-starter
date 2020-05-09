@@ -29,6 +29,9 @@ export class AppConfigService {
         return this.configService.get<string>('app.jwtSecret');
     }
     get jwtExpiresIn(): string {
-        return this.configService.get('app.jwtExpiresIn')
+        return this.configService.get('app.jwtExpiresIn');
+    }
+    get googleMapApiKey(): string {
+        return this.configService.get('app.googleMapApiKey');
     }
 }

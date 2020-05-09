@@ -1,4 +1,4 @@
-import {Body, ClassSerializerInterceptor, Controller, Get, Post, UseGuards, UseInterceptors} from '@nestjs/common';
+import {Body, ClassSerializerInterceptor, Controller, Get, Post, Put, UseGuards, UseInterceptors} from '@nestjs/common';
 import {UsersService} from "./services/users.service";
 import {ApiBearerAuth, ApiCreatedResponse, ApiResponse, ApiTags} from '@nestjs/swagger';
 import {UserDto} from "./dto/User.dto";
@@ -10,6 +10,7 @@ import {SuccessResponseDto} from "../../shared/dto/SuccessResponse.dto";
 import {RequestResetPasswordDto} from "./dto/RequestResetPassword.dto";
 import {ResetPasswordDto} from "./dto/ResetPassword.dto";
 import {ActivatePhoneDto} from "./dto/ActivatePhone.dto";
+import {CreateUserDto} from "./dto/CreateUser.dto";
 
 @ApiTags('User')
 @Controller('users')
@@ -22,9 +23,9 @@ export class UsersController {
     @UseInterceptors(ClassSerializerInterceptor)
     @ApiCreatedResponse({status: 201, description: 'User created.', type: UserDto})
     public register(
-        @Body() userDto: UserDto
+        @Body() createUserDto: CreateUserDto
     ): Promise<UserDto> {
-        return this.usersService.addNewUser(userDto);
+        return this.usersService.addNewUser(createUserDto);
     }
 
     @UseGuards(AuthGuard('jwt'))
@@ -74,5 +75,16 @@ export class UsersController {
         @GetUser() user: User,
     ) {
         return user;
+    }
+
+    @Put('/profile')
+    @UseGuards(AuthGuard('jwt'))
+    @UseInterceptors(ClassSerializerInterceptor)
+    @ApiBearerAuth()
+    public updateProfile(
+        @Body() userDto: UserDto,
+        @GetUser() user: User
+    ): Promise<UserDto> {
+        return this.usersService.updateProfile(user.id, userDto);
     }
 }

@@ -3,32 +3,31 @@ import {UserAddressDto} from "../../modules/users/dto/UserAddress.dto";
 import {UserAddress} from "../../modules/users/entities/UserAddress.entity";
 import {Client} from '@googlemaps/google-maps-services-js';
 import {AddressComponent} from "@googlemaps/google-maps-services-js/dist/common";
+import {ConfigService} from "@nestjs/config";
+import {AppConfigService} from "../../config/app/config.service";
 
 @Injectable()
 export class GoogleMapsService {
     private readonly client: Client;
 
-    constructor() {
+    constructor(
+        private readonly appConfigService: AppConfigService
+    ) {
         this.client = new Client();
     }
 
+    /**
+     * TODO: Add google maps decoder
+     * Getting user address entity from dto
+     * @param userAddressDto
+     */
     public async getUserAddress(userAddressDto: UserAddressDto): Promise<UserAddress> {
         const {lat, lng, address} = userAddressDto;
-        const addressComponents = await this.client.reverseGeocode({
-            params: {
-                place_id: 'ChIJsfWg8ZnnOkcRTpCkWOgD8fg',
-                key: 'AIzaSyChXQ-Gvky8X_pZLjc4W_RCxkTcLTPdoU8'
-            }
-        });
+
         const userAddress = new UserAddress();
         userAddress.address = address;
         userAddress.lat = lat;
         userAddress.lng = lng;
-
-        if (addressComponents.data && addressComponents.data.results.length > 0) {
-            userAddress.country = this.getCountryFromComponents(addressComponents.data.results[0].address_components);
-            userAddress.city = this.getCityFromComponents(addressComponents.data.results[0].address_components);
-        }
 
         return userAddress;
     }

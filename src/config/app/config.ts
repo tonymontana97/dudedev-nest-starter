@@ -6,5 +6,6 @@ export default registerAs('app', () => ({
     port: process.env.APP_PORT,
     jwtSecret: process.env.APP_JWT_SECRET,
     jwtExpiresIn: process.env.APP_JWT_EXPIRES_IN,
+    googleMapApiKey: process.env.APP_GOOGLE_MAP_API_KEY,
     domain: process.env.APP_DOMAIN
 }))

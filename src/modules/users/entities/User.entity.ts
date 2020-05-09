@@ -1,4 +1,4 @@
-import {Entity, Column, PrimaryGeneratedColumn, JoinTable, OneToMany, ManyToMany, OneToOne} from 'typeorm';
+import {Entity, Column, PrimaryGeneratedColumn, JoinTable, OneToMany, ManyToMany, OneToOne, JoinColumn} from 'typeorm';
 import { Exclude } from 'class-transformer';
 import {MainEntity} from "../../../shared/database/Base.entity";
 import {UserRole} from "./UserRole.entity";
@@ -78,6 +78,7 @@ export class User extends MainEntity {
             onDelete: 'CASCADE'
         }
     )
+    @JoinColumn()
     address: UserAddress;
 
     @ManyToMany(

@@ -6,5 +6,7 @@ export default registerAs('app', () => ({
     port: process.env.APP_PORT,
     jwtSecret: process.env.APP_JWT_SECRET,
     jwtExpiresIn: process.env.APP_JWT_EXPIRES_IN,
-    domain: process.env.APP_DOMAIN
+    domain: process.env.APP_DOMAIN,
+    perchwellUsername: process.env.PERCHWELL_USERNAME,
+    perchwellPassword: process.env.PERCHWELL_PASSWORD
 }))

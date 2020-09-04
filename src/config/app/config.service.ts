@@ -31,4 +31,10 @@ export class AppConfigService {
     get jwtExpiresIn(): string {
         return this.configService.get('app.jwtExpiresIn')
     }
+    get perchwellUsername(): string {
+        return this.configService.get('app.perchwellUsername')
+    }
+    get perchwellPassword(): string {
+        return this.configService.get('app.perchwellPassword')
+    }
 }

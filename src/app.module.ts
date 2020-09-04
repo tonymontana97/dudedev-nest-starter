@@ -13,6 +13,7 @@ import {RedisConfigModule} from "./config/database/redis/config.module";
 import {RedisConfigService} from "./config/database/redis/config.service";
 import { RedisAdapterModule } from './shared/redis-adapter/redis-adapter.module';
 import { MailModule } from './shared/mail/mail.module';
+import { PerchwellService } from './libs/perchwell/perchwell.service';
 
 const configs = [
     AppConfigModule,
@@ -85,6 +86,6 @@ const redis = [
       MailModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [PerchwellService],
 })
 export class AppModule {}

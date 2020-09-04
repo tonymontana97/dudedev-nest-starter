@@ -20,7 +20,9 @@ import config from './config';
                 APP_DOMAIN: Joi.string(),
                 APP_PORT: Joi.number().default(9000),
                 APP_JWT_SECRET: Joi.string(),
-                APP_JWT_EXPIRES_IN: Joi.string().default('60s')
+                APP_JWT_EXPIRES_IN: Joi.string().default('60s'),
+                PERCHWELL_USERNAME: Joi.string(),
+                PERCHWELL_PASSWORD: Joi.string()
             }),
         }),
     ],
